@@ -1,0 +1,51 @@
+<h1>Welcome, <span id="username"></span></h1>
+<ul id="messages" class="list-unstyled" style="margin:0 0 10 0; padding:10px; overflow-y:auto; height:300px; border:1px solid #ccc;"></ul>
+<form class="form-inline" onsubmit="sendMessage(this); return false;">
+    <input type="text" placeholder="Type your message here" class="form-control" name="text" style="width:82%; float:left;" /><button class="btn btn-primary" style="width:15%; float:right;"><i class="glyphicon glyphicon-send"></i> Send</button>
+</form>
+
+@section Scripts {
+<script>
+//Let's generate a username on the client, just for demo purposes
+//WARNING: the username should always be determined on the server side
+var username = "User" + Math.round(Math.random()*1000);
+$("#username").text(username);
+var socket;
+
+function sendMessage(form) {
+  var text = form.text.value;
+  if (!text) return;
+  var message = JSON.stringify({sender: username, text: text}); 
+  socket.send(message);
+  form.text.value = "";
+}
+function receiveMessage(event) {
+    var message = JSON.parse(event.data);
+    var messageElement = $("<li></li>");
+    messageElement.html("<strong>" + message.sender + "</strong>: " + message.text);
+    var messages = $("#messages");
+    messages.append(messageElement);
+    messages.animate({scrollTop: messages[0].scrollHeight}, 500);
+}
+function createWebSocket() {
+  var scheme = document.location.protocol == "https:" ? "wss" : "ws";
+  var port = document.location.port ? (":" + document.location.port) : "";
+  var connectionUrl = scheme + "://" + document.location.hostname + port + "/ws";
+  var socket = new WebSocket(connectionUrl);
+  socket.onopen = function (event) {
+    console.log("websocket opened");
+  };
+  socket.onclose = function (event) {
+   console.log("websocket closed");
+  };
+  socket.onerror = function (event) {
+    console.log("websocket error", event);
+  };
+  socket.onmessage = receiveMessage;
+  return socket;
+}
+
+socket = createWebSocket();
+
+</script>
+}
